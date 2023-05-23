@@ -88,6 +88,8 @@ class TaxiEnv(Env):
                             new_state = self.encode(
                                 new_row, new_col, new_pass_idx, dest_idx
                             )
+                            
+                            #Bug on this line, Need to figure out why its not wanting to read the 720 states....
                             self.P[state][action].append(
                                 (1.0, new_state, reward, terminated)
                             )
