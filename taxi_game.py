@@ -30,12 +30,51 @@ LOC_D = (5, 8)
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 
+# Game variables
+board: list[list]
+taxi_x: int
+taxi_y: int
+passenger_x: int
+passenger_y: int
+dropoff_x: int
+dropoff_y: int
+
+def new_game():
+    global board, taxi_x, taxi_y, passenger_x, passenger_y, dropoff_x, dropoff_y
+
+    # Initialize game board
+    board = [
+        [EMPTY, OB__L, OB__H, OB__H, OB__H, OB__H, OB__H, OB__H, OB__R, EMPTY],
+        [OB__T, EMPTY, EMPTY, OB__T, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, OB__T],
+        [OB__V, EMPTY, EMPTY, OB__B, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, OB__V],
+        [OB__V, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, OB__V],
+        [OB__V, EMPTY, OB__T, EMPTY, EMPTY, EMPTY, EMPTY, OB__T, EMPTY, OB__V],
+        [OB__B, EMPTY, OB__B, EMPTY, EMPTY, EMPTY, EMPTY, OB__B, EMPTY, OB__B],
+        [EMPTY, OB__L, OB__H, OB__H, OB__H, OB__H, OB__H, OB__H, OB__R, EMPTY],
+    ]
+
+    # Set taxi to random position
+    taxi_x, taxi_y = random.randint(1, WIN_ROWS - 2), random.randint(1, WIN_COLS - 2)
+    board[taxi_x][taxi_y] = TAXI
+
+    # Generate random passenger locations
+    locations = [LOC_A, LOC_B, LOC_C, LOC_D]
+    passenger_x, passenger_y = locations[random.randint(0, 3)]
+
+    # Generate random drop-off locations
+    dropoff_x, dropoff_y = locations[random.randint(0, 3)]
+    while (passenger_x, passenger_y) == (dropoff_x, dropoff_y):
+        dropoff_x, dropoff_y = locations[random.randint(0, 3)]
+
+    # Save Locations
+    board[passenger_x][passenger_y] = PASSENGER
+    board[dropoff_x][dropoff_y] = DROPOFF
+
 # Initialize Pygame
 pygame.init()
 window = pygame.display.set_mode(WINDOW_SIZE)
 pygame.display.set_caption("Taxi Game")
 
-# Load custom sprites
 # Load custom sprites
 taxi_images = {
     "up": pygame.image.load("img/cab_rear.png"),
@@ -74,41 +113,17 @@ obstacle_image_right = pygame.transform.scale(
 )
 background_tile = pygame.transform.scale(background_tile, (CELL_SIZE, CELL_SIZE))
 
-# Initialize game board
-board = [
-    [EMPTY, OB__L, OB__H, OB__H, OB__H, OB__H, OB__H, OB__H, OB__R, EMPTY],
-    [OB__T, EMPTY, EMPTY, OB__T, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, OB__T],
-    [OB__V, EMPTY, EMPTY, OB__B, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, OB__V],
-    [OB__V, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, OB__V],
-    [OB__V, EMPTY, OB__T, EMPTY, EMPTY, EMPTY, EMPTY, OB__T, EMPTY, OB__V],
-    [OB__B, EMPTY, OB__B, EMPTY, EMPTY, EMPTY, EMPTY, OB__B, EMPTY, OB__B],
-    [EMPTY, OB__L, OB__H, OB__H, OB__H, OB__H, OB__H, OB__H, OB__R, EMPTY],
-]
-
-# Set taxi to random position
-taxi_x, taxi_y = random.randint(1, WIN_ROWS - 2), random.randint(1, WIN_COLS - 2)
-board[taxi_x][taxi_y] = TAXI
-
-# Generate random passenger locations
-locations = [LOC_A, LOC_B, LOC_C, LOC_D]
-passenger_x, passenger_y = locations[random.randint(0, 3)]
-
-# Generate random drop-off locations
-dropoff_x, dropoff_y = locations[random.randint(0, 3)]
-while (passenger_x, passenger_y) == (dropoff_x, dropoff_y):
-    dropoff_x, dropoff_y = locations[random.randint(0, 3)]
-
-# Save Locations
-board[passenger_x][passenger_y] = PASSENGER
-board[dropoff_x][dropoff_y] = DROPOFF
-
 clock = pygame.time.Clock()
 score = 0
 has_passenger = False
 
 # Game loop
 running = True
+reset = True
 while running:
+    if reset:
+        new_game()
+        reset = False
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -140,12 +155,12 @@ while running:
     # Check if passenger has been dropped off
     if (taxi_x, taxi_y) == (dropoff_x, dropoff_y) and has_passenger:
         print("Passenger dropped off! You win!")
-        running = False
+        reset = True
+        score += 1
 
     # Check if taxi picked up the passenger
     if (taxi_x, taxi_y) == (passenger_x, passenger_y):
         board[passenger_x][passenger_y] = EMPTY
-        score += 1
         has_passenger = True
         print("Passenger picked up! Head to the drop-off location.")
 
