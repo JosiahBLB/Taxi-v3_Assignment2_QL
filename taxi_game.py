@@ -11,20 +11,20 @@ TAXI = "T"
 PASSENGER = "P"
 DROPOFF = "D"
 
-# Obstacles 
-OB__T = "XT" # Top
-OB__B = "XB" # Bottom
-OB__L = "XL" # Left
-OB__R = "XR" # Right
-OB__H = "XH" # Horizontal
-OB__V = "XV" # Vertical
+# Obstacles
+OB__T = "XT"  # Top
+OB__B = "XB"  # Bottom
+OB__L = "XL"  # Left
+OB__R = "XR"  # Right
+OB__H = "XH"  # Horizontal
+OB__V = "XV"  # Vertical
 OBSTACLES = [OB__T, OB__B, OB__L, OB__R, OB__H, OB__V]
 
 # PICKUP & DROPOFF LOCATIONS
-LOC_A = (1,1)
-LOC_B = (1,8)
-LOC_C = (5,1)
-LOC_D = (5,8)
+LOC_A = (1, 1)
+LOC_B = (1, 8)
+LOC_C = (5, 1)
+LOC_D = (5, 8)
 
 # Colors
 BLACK = (0, 0, 0)
@@ -55,33 +55,41 @@ obstacle_image_right = pygame.image.load("img/gridworld_median_right.png")
 
 # Resize sprites to fit cell size
 for direction in taxi_images:
-    taxi_images[direction] = pygame.transform.scale(taxi_images[direction], (CELL_SIZE, CELL_SIZE))
+    taxi_images[direction] = pygame.transform.scale(
+        taxi_images[direction], (CELL_SIZE, CELL_SIZE)
+    )
 passenger_image = pygame.transform.scale(passenger_image, (CELL_SIZE, CELL_SIZE))
 dropoff_image = pygame.transform.scale(dropoff_image, (CELL_SIZE, CELL_SIZE))
-obstacle_image_vert = pygame.transform.scale(obstacle_image_vert, (CELL_SIZE, CELL_SIZE))
+obstacle_image_vert = pygame.transform.scale(
+    obstacle_image_vert, (CELL_SIZE, CELL_SIZE)
+)
 obstacle_image_top = pygame.transform.scale(obstacle_image_top, (CELL_SIZE, CELL_SIZE))
 obstacle_image_bot = pygame.transform.scale(obstacle_image_bot, (CELL_SIZE, CELL_SIZE))
 obstacle_image_hoz = pygame.transform.scale(obstacle_image_hoz, (CELL_SIZE, CELL_SIZE))
-obstacle_image_left = pygame.transform.scale(obstacle_image_left, (CELL_SIZE, CELL_SIZE))
-obstacle_image_right = pygame.transform.scale(obstacle_image_right, (CELL_SIZE, CELL_SIZE))
+obstacle_image_left = pygame.transform.scale(
+    obstacle_image_left, (CELL_SIZE, CELL_SIZE)
+)
+obstacle_image_right = pygame.transform.scale(
+    obstacle_image_right, (CELL_SIZE, CELL_SIZE)
+)
 background_tile = pygame.transform.scale(background_tile, (CELL_SIZE, CELL_SIZE))
 
 # Initialize game board
 board = [
-    [EMPTY,OB__L,OB__H,OB__H,OB__H,OB__H,OB__H,OB__H,OB__R,EMPTY],
-    [OB__T,EMPTY,EMPTY,OB__T,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,OB__T],
-    [OB__V,EMPTY,EMPTY,OB__B,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,OB__V],
-    [OB__V,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,OB__V],
-    [OB__V,EMPTY,OB__T,EMPTY,EMPTY,EMPTY,EMPTY,OB__T,EMPTY,OB__V],
-    [OB__B,EMPTY,OB__B,EMPTY,EMPTY,EMPTY,EMPTY,OB__B,EMPTY,OB__B],
-    [EMPTY,OB__L,OB__H,OB__H,OB__H,OB__H,OB__H,OB__H,OB__R,EMPTY]
+    [EMPTY, OB__L, OB__H, OB__H, OB__H, OB__H, OB__H, OB__H, OB__R, EMPTY],
+    [OB__T, EMPTY, EMPTY, OB__T, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, OB__T],
+    [OB__V, EMPTY, EMPTY, OB__B, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, OB__V],
+    [OB__V, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, OB__V],
+    [OB__V, EMPTY, OB__T, EMPTY, EMPTY, EMPTY, EMPTY, OB__T, EMPTY, OB__V],
+    [OB__B, EMPTY, OB__B, EMPTY, EMPTY, EMPTY, EMPTY, OB__B, EMPTY, OB__B],
+    [EMPTY, OB__L, OB__H, OB__H, OB__H, OB__H, OB__H, OB__H, OB__R, EMPTY],
 ]
 
 # Set taxi to random position
-taxi_x, taxi_y = random.randint(1, WIN_ROWS-2), random.randint(1, WIN_COLS-2)
+taxi_x, taxi_y = random.randint(1, WIN_ROWS - 2), random.randint(1, WIN_COLS - 2)
 board[taxi_x][taxi_y] = TAXI
 
-# Generate random passenger locations 
+# Generate random passenger locations
 locations = [LOC_A, LOC_B, LOC_C, LOC_D]
 passenger_x, passenger_y = locations[random.randint(0, 3)]
 
@@ -108,22 +116,22 @@ while running:
         # Get user input for taxi movement
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP and taxi_x > 0:
-                if board[taxi_x-1][taxi_y] not in OBSTACLES:
+                if board[taxi_x - 1][taxi_y] not in OBSTACLES:
                     board[taxi_x][taxi_y] = EMPTY
                     taxi_x -= 1
                     direction = "up"
             elif event.key == pygame.K_DOWN and taxi_x < WIN_ROWS - 1:
-                if board[taxi_x+1][taxi_y] not in OBSTACLES:
+                if board[taxi_x + 1][taxi_y] not in OBSTACLES:
                     board[taxi_x][taxi_y] = EMPTY
                     taxi_x += 1
                     direction = "down"
             elif event.key == pygame.K_LEFT and taxi_y > 0:
-                if board[taxi_x][taxi_y-1] not in OBSTACLES:
+                if board[taxi_x][taxi_y - 1] not in OBSTACLES:
                     board[taxi_x][taxi_y] = EMPTY
                     taxi_y -= 1
                     direction = "left"
             elif event.key == pygame.K_RIGHT and taxi_y < WIN_COLS - 1:
-                if board[taxi_x][taxi_y+1] not in OBSTACLES:
+                if board[taxi_x][taxi_y + 1] not in OBSTACLES:
                     board[taxi_x][taxi_y] = EMPTY
                     taxi_y += 1
                     direction = "right"
@@ -150,14 +158,18 @@ while running:
     # Draw the background tiles
     for row in range(WIN_ROWS):
         for col in range(WIN_COLS):
-            cell_rect = pygame.Rect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+            cell_rect = pygame.Rect(
+                col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE
+            )
             window.blit(background_tile, cell_rect)
 
     # Draw the obstacles
     for row in range(WIN_ROWS):
         for col in range(WIN_COLS):
             if board[row][col] in OBSTACLES:
-                cell_rect = pygame.Rect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+                cell_rect = pygame.Rect(
+                    col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE
+                )
                 if board[row][col] == OB__B:
                     window.blit(obstacle_image_bot, cell_rect)
                 if board[row][col] == OB__T:
@@ -174,7 +186,9 @@ while running:
     # Draw the game board
     for row in range(WIN_ROWS):
         for col in range(WIN_COLS):
-            cell_rect = pygame.Rect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+            cell_rect = pygame.Rect(
+                col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE
+            )
             if board[row][col] == TAXI:
                 window.blit(taxi_images[direction], cell_rect)
             elif board[row][col] == PASSENGER:
