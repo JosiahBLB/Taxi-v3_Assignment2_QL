@@ -3,14 +3,22 @@ import random
 
 # Game constants
 WIN_COLS = 10
-WIN_ROWS = 6
+WIN_ROWS = 7
 CELL_SIZE = 80
 WINDOW_SIZE = (WIN_COLS * CELL_SIZE, WIN_ROWS * CELL_SIZE)
 EMPTY = "-"
 TAXI = "T"
 PASSENGER = "P"
 DROPOFF = "D"
-OBSTACLE = "X"
+
+# Obstacles 
+OB__T = "XT" # Top
+OB__B = "XB" # Bottom
+OB__L = "XL" # Left
+OB__R = "XR" # Right
+OB__H = "XH" # Horizontal
+OB__V = "XV" # Vertical
+OBSTACLES = [OB__T, OB__B, OB__L, OB__R, OB__H, OB__V]
 
 # PICKUP & DROPOFF LOCATIONS
 LOC_A = (1,1)
@@ -41,6 +49,9 @@ background_tile = pygame.image.load("img/taxi_background.png")
 obstacle_image_vert = pygame.image.load("img/gridworld_median_vert.png")
 obstacle_image_top = pygame.image.load("img/gridworld_median_top.png")
 obstacle_image_bot = pygame.image.load("img/gridworld_median_bottom.png")
+obstacle_image_hoz = pygame.image.load("img/gridworld_median_horiz.png")
+obstacle_image_left = pygame.image.load("img/gridworld_median_left.png")
+obstacle_image_right = pygame.image.load("img/gridworld_median_right.png")
 
 # Resize sprites to fit cell size
 for direction in taxi_images:
@@ -50,13 +61,24 @@ dropoff_image = pygame.transform.scale(dropoff_image, (CELL_SIZE, CELL_SIZE))
 obstacle_image_vert = pygame.transform.scale(obstacle_image_vert, (CELL_SIZE, CELL_SIZE))
 obstacle_image_top = pygame.transform.scale(obstacle_image_top, (CELL_SIZE, CELL_SIZE))
 obstacle_image_bot = pygame.transform.scale(obstacle_image_bot, (CELL_SIZE, CELL_SIZE))
+obstacle_image_hoz = pygame.transform.scale(obstacle_image_hoz, (CELL_SIZE, CELL_SIZE))
+obstacle_image_left = pygame.transform.scale(obstacle_image_left, (CELL_SIZE, CELL_SIZE))
+obstacle_image_right = pygame.transform.scale(obstacle_image_right, (CELL_SIZE, CELL_SIZE))
 background_tile = pygame.transform.scale(background_tile, (CELL_SIZE, CELL_SIZE))
 
 # Initialize game board
-board = [[EMPTY for _ in range(WIN_COLS)] for _ in range(WIN_ROWS)]
+board = [
+    [EMPTY,OB__L,OB__H,OB__H,OB__H,OB__H,OB__H,OB__H,OB__R,EMPTY],
+    [OB__T,EMPTY,EMPTY,OB__T,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,OB__T],
+    [OB__V,EMPTY,EMPTY,OB__B,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,OB__V],
+    [OB__V,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,OB__V],
+    [OB__V,EMPTY,OB__T,EMPTY,EMPTY,EMPTY,EMPTY,OB__T,EMPTY,OB__V],
+    [OB__B,EMPTY,OB__B,EMPTY,EMPTY,EMPTY,EMPTY,OB__B,EMPTY,OB__B],
+    [EMPTY,OB__L,OB__H,OB__H,OB__H,OB__H,OB__H,OB__H,OB__R,EMPTY]
+]
 
 # Set taxi to random position
-taxi_x, taxi_y = random.randint(0, WIN_ROWS-1), random.randint(0, WIN_COLS-1)
+taxi_x, taxi_y = random.randint(1, WIN_ROWS-2), random.randint(1, WIN_COLS-2)
 board[taxi_x][taxi_y] = TAXI
 
 # Generate random passenger locations 
@@ -72,21 +94,6 @@ while (passenger_x, passenger_y) == (dropoff_x, dropoff_y):
 board[passenger_x][passenger_y] = PASSENGER
 board[dropoff_x][dropoff_y] = DROPOFF
 
-# Generate obstacle positions
-obstacle_locations = []
-for row in range(WIN_ROWS):
-    for col in range(WIN_COLS):
-        # Top boundary
-        if row == 0 and col in range(1,9):
-            obstacle_locations.append((row, col))
-        # Bottom boundary
-        if row == 6 and col in range(1,9):
-            obstacle_locations.append((row, col))
-for location in obstacle_locations:
-    obstacle_x, obstacle_y = location
-    board[obstacle_x][obstacle_y] = OBSTACLE
-
-
 clock = pygame.time.Clock()
 score = 0
 has_passenger = False
@@ -101,21 +108,25 @@ while running:
         # Get user input for taxi movement
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP and taxi_x > 0:
-                board[taxi_x][taxi_y] = EMPTY
-                taxi_x -= 1
-                direction = "up"
+                if board[taxi_x-1][taxi_y] not in OBSTACLES:
+                    board[taxi_x][taxi_y] = EMPTY
+                    taxi_x -= 1
+                    direction = "up"
             elif event.key == pygame.K_DOWN and taxi_x < WIN_ROWS - 1:
-                board[taxi_x][taxi_y] = EMPTY
-                taxi_x += 1
-                direction = "down"
+                if board[taxi_x+1][taxi_y] not in OBSTACLES:
+                    board[taxi_x][taxi_y] = EMPTY
+                    taxi_x += 1
+                    direction = "down"
             elif event.key == pygame.K_LEFT and taxi_y > 0:
-                board[taxi_x][taxi_y] = EMPTY
-                taxi_y -= 1
-                direction = "left"
+                if board[taxi_x][taxi_y-1] not in OBSTACLES:
+                    board[taxi_x][taxi_y] = EMPTY
+                    taxi_y -= 1
+                    direction = "left"
             elif event.key == pygame.K_RIGHT and taxi_y < WIN_COLS - 1:
-                board[taxi_x][taxi_y] = EMPTY
-                taxi_y += 1
-                direction = "right"
+                if board[taxi_x][taxi_y+1] not in OBSTACLES:
+                    board[taxi_x][taxi_y] = EMPTY
+                    taxi_y += 1
+                    direction = "right"
             board[dropoff_x][dropoff_y] = DROPOFF
 
     # Check if passenger has been dropped off
@@ -145,13 +156,19 @@ while running:
     # Draw the obstacles
     for row in range(WIN_ROWS):
         for col in range(WIN_COLS):
-            if board[row][col] == OBSTACLE:
+            if board[row][col] in OBSTACLES:
                 cell_rect = pygame.Rect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-                if(row, col) == locations[1] or (row, col) == locations[3]:
-                    window.blit(obstacle_image_top, cell_rect)
-                elif(row, col) == locations[0]:
+                if board[row][col] == OB__B:
                     window.blit(obstacle_image_bot, cell_rect)
-                else:
+                if board[row][col] == OB__T:
+                    window.blit(obstacle_image_top, cell_rect)
+                if board[row][col] == OB__L:
+                    window.blit(obstacle_image_left, cell_rect)
+                if board[row][col] == OB__R:
+                    window.blit(obstacle_image_right, cell_rect)
+                if board[row][col] == OB__H:
+                    window.blit(obstacle_image_hoz, cell_rect)
+                if board[row][col] == OB__V:
                     window.blit(obstacle_image_vert, cell_rect)
 
     # Draw the game board
