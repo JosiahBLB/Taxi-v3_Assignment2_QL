@@ -24,8 +24,6 @@ WINDOW_SIZE = (550, 350)
 
 
 class TaxiEnv(Env):
-    
-
     metadata = {
         "render_modes": ["human", "ansi", "rgb_array"],
         "render_fps": 4,
@@ -88,8 +86,8 @@ class TaxiEnv(Env):
                             new_state = self.encode(
                                 new_row, new_col, new_pass_idx, dest_idx
                             )
-                            
-                            #Bug on this line, Need to figure out why its not wanting to read the 720 states....
+
+                            # Bug on this line, Need to figure out why its not wanting to read the 720 states....
                             self.P[state][action].append(
                                 (1.0, new_state, reward, terminated)
                             )
@@ -250,7 +248,7 @@ class TaxiEnv(Env):
                 for file_name in file_names
             ]
         if self.median_vert is None:
-            file_names = [  
+            file_names = [
                 path.join(path.dirname(__file__), "img/gridworld_median_top.png"),
                 path.join(path.dirname(__file__), "img/gridworld_median_vert.png"),
                 path.join(path.dirname(__file__), "img/gridworld_median_bottom.png"),
@@ -384,7 +382,6 @@ def main():
     total_reward = 0
 
     while not done:
-
         # Randomly choose an action
         action = env.action_space.sample()
 
@@ -405,6 +402,7 @@ def main():
 
     # Close the environment
     env.close()
+
 
 if __name__ == "__main__":
     main()
