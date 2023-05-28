@@ -38,9 +38,11 @@ passenger_x: int
 passenger_y: int
 dropoff_x: int
 dropoff_y: int
+has_passenger: bool
+
 
 def new_game():
-    global board, taxi_x, taxi_y, passenger_x, passenger_y, dropoff_x, dropoff_y
+    global board, taxi_x, taxi_y, passenger_x, passenger_y, dropoff_x, dropoff_y, has_passenger
 
     # Initialize game board
     board = [
@@ -55,6 +57,8 @@ def new_game():
 
     # Set taxi to random position
     taxi_x, taxi_y = random.randint(1, WIN_ROWS - 2), random.randint(1, WIN_COLS - 2)
+    while board[taxi_x][taxi_y] in OBSTACLES:
+        taxi_x, taxi_y = random.randint(1, WIN_ROWS - 2), random.randint(1, WIN_COLS - 2)
     board[taxi_x][taxi_y] = TAXI
 
     # Generate random passenger locations
@@ -70,10 +74,17 @@ def new_game():
     board[passenger_x][passenger_y] = PASSENGER
     board[dropoff_x][dropoff_y] = DROPOFF
 
+    has_passenger = False
+
+
 # Initialize Pygame
 pygame.init()
 window = pygame.display.set_mode(WINDOW_SIZE)
 pygame.display.set_caption("Taxi Game")
+
+# Define font properties
+font_size = 40
+font = pygame.font.Font(None, font_size)
 
 # Load custom sprites
 taxi_images = {
@@ -115,7 +126,6 @@ background_tile = pygame.transform.scale(background_tile, (CELL_SIZE, CELL_SIZE)
 
 clock = pygame.time.Clock()
 score = 0
-has_passenger = False
 
 # Game loop
 running = True
@@ -159,7 +169,7 @@ while running:
         score += 1
 
     # Check if taxi picked up the passenger
-    if (taxi_x, taxi_y) == (passenger_x, passenger_y):
+    if (taxi_x, taxi_y) == (passenger_x, passenger_y) and not has_passenger:
         board[passenger_x][passenger_y] = EMPTY
         has_passenger = True
         print("Passenger picked up! Head to the drop-off location.")
@@ -210,6 +220,12 @@ while running:
                 window.blit(passenger_image, cell_rect)
             elif board[row][col] == DROPOFF:
                 window.blit(dropoff_image, cell_rect)
+
+    # Render the score text
+    score_text = font.render("Score: " + str(score), True, WHITE, BLACK)
+
+    # Blit the score text onto the window surface
+    window.blit(score_text,(10,10))
 
     # Update the display
     pygame.display.flip()
