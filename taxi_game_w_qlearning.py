@@ -146,6 +146,7 @@ clock = pygame.time.Clock()
 score = 0
 running = True
 reset = True
+display_reward = 0
 while running:
 
     # Resets the board to a randomized layout
@@ -240,9 +241,13 @@ while running:
     if (taxi_x, taxi_y) == (dropoff_x, dropoff_y) and has_passenger:
         reset = True
         score += 1
+        display_reward += 100
     elif (taxi_x, taxi_y) == (passenger_x, passenger_y) and not has_passenger:
         board[passenger_x][passenger_y] = EMPTY
         has_passenger = True
+        display_reward += 10
+    else:
+        display_reward -= 1
 
 
     # Update taxi and dropoff location on the board
@@ -295,7 +300,7 @@ while running:
 
     # Render the score text
     score_text = font.render("Score: " + str(score), True, WHITE, BLACK)
-    reward_text = font.render("Reward: " + str(total_reward), True, RED, BLACK)
+    reward_text = font.render("Reward: " + str(display_reward), True, RED, BLACK)
     window.blit(reward_text, (WIN_COLS * CELL_SIZE - 200, 10))
 
     # Blit the score text onto the window surface
