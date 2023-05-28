@@ -58,7 +58,9 @@ def new_game():
     # Set taxi to random position
     taxi_x, taxi_y = random.randint(1, WIN_ROWS - 2), random.randint(1, WIN_COLS - 2)
     while board[taxi_x][taxi_y] in OBSTACLES:
-        taxi_x, taxi_y = random.randint(1, WIN_ROWS - 2), random.randint(1, WIN_COLS - 2)
+        taxi_x, taxi_y = random.randint(1, WIN_ROWS - 2), random.randint(
+            1, WIN_COLS - 2
+        )
     board[taxi_x][taxi_y] = TAXI
 
     # Generate random passenger locations
@@ -225,7 +227,7 @@ while running:
     score_text = font.render("Score: " + str(score), True, WHITE, BLACK)
 
     # Blit the score text onto the window surface
-    window.blit(score_text,(10,10))
+    window.blit(score_text, (10, 10))
 
     # Update the display
     pygame.display.flip()
