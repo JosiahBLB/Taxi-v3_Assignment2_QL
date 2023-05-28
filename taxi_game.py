@@ -1,5 +1,8 @@
+import time
 import pygame
 import random
+import numpy as np
+
 
 # Game constants
 WIN_COLS = 10
@@ -11,6 +14,16 @@ TAXI = "T"
 PASSENGER = "P"
 DROPOFF = "D"
 
+# Q-learning constants
+NUM_ACTIONS = 6
+NUM_EPISODES = 10000
+MAX_STEPS = 100
+ALPHA = 0.1
+GAMMA = 0.6
+EPSILON = 0.1
+
+Q = np.zeros((WIN_ROWS, WIN_COLS, NUM_ACTIONS))
+
 # Obstacles
 OB__T = "XT"  # Top
 OB__B = "XB"  # Bottom
@@ -20,7 +33,7 @@ OB__H = "XH"  # Horizontal
 OB__V = "XV"  # Vertical
 OBSTACLES = [OB__T, OB__B, OB__L, OB__R, OB__H, OB__V]
 
-# PICKUP & DROPOFF LOCATIONS
+# Pickup and dropoff locations
 LOC_A = (1, 1)
 LOC_B = (1, 8)
 LOC_C = (5, 1)
@@ -126,58 +139,102 @@ obstacle_image_right = pygame.transform.scale(
 )
 background_tile = pygame.transform.scale(background_tile, (CELL_SIZE, CELL_SIZE))
 
-clock = pygame.time.Clock()
-score = 0
 
 # Game loop
+clock = pygame.time.Clock()
+score = 0
 running = True
 reset = True
 while running:
+
+    # Resets the board to a randomized layout
     if reset:
         new_game()
         reset = False
+    
+    # A way for the user to exit
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
-        # Get user input for taxi movement
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP and taxi_x > 0:
-                if board[taxi_x - 1][taxi_y] not in OBSTACLES:
-                    board[taxi_x][taxi_y] = EMPTY
-                    taxi_x -= 1
-                    direction = "up"
-            elif event.key == pygame.K_DOWN and taxi_x < WIN_ROWS - 1:
-                if board[taxi_x + 1][taxi_y] not in OBSTACLES:
-                    board[taxi_x][taxi_y] = EMPTY
-                    taxi_x += 1
-                    direction = "down"
-            elif event.key == pygame.K_LEFT and taxi_y > 0:
-                if board[taxi_x][taxi_y - 1] not in OBSTACLES:
-                    board[taxi_x][taxi_y] = EMPTY
-                    taxi_y -= 1
-                    direction = "left"
-            elif event.key == pygame.K_RIGHT and taxi_y < WIN_COLS - 1:
-                if board[taxi_x][taxi_y + 1] not in OBSTACLES:
-                    board[taxi_x][taxi_y] = EMPTY
-                    taxi_y += 1
-                    direction = "right"
-            board[dropoff_x][dropoff_y] = DROPOFF
+    # Updating the Q-table
+    for episode in range(NUM_EPISODES):
+        state = (taxi_x, taxi_y)
+        total_reward = 0
+        for step in range(MAX_STEPS):
 
-    # Check if passenger has been dropped off
-    if (taxi_x, taxi_y) == (dropoff_x, dropoff_y) and has_passenger:
-        print("Passenger dropped off! You win!")
+            # Choose an optimised choice or random choice based on ϵ
+            if random.uniform(0, 1) < EPSILON:
+                action = random.choice(range(4))
+            else:
+                action = np.argmax(Q[state])
+
+            # Taxi movement
+            if action == 0 and board[state[0] - 1][state[1]] not in OBSTACLES:
+                new_state = (state[0] - 1, state[1])
+            elif action == 1 and board[state[0] + 1][state[1]] not in OBSTACLES:
+                new_state = (state[0] + 1, state[1])
+            elif action == 2 and board[state[0]][state[1] - 1] not in OBSTACLES:
+                new_state = (state[0], state[1] - 1)
+            elif action == 3 and board[state[0]][state[1] + 1] not in OBSTACLES:
+                new_state = (state[0], state[1] + 1)
+            else:
+                new_state = state
+                print(new_state)
+            reward = 0
+            # Check if passenger has been dropped off
+            if new_state == (dropoff_x, dropoff_y) and has_passenger:
+                reward += 100
+
+            # Check if taxi picked up the passenger
+            elif new_state == (passenger_x, passenger_y) and not has_passenger:
+                board[passenger_x][passenger_y] = EMPTY
+                has_passenger = True
+                reward += 10
+
+            # Minus one for playing a move
+            else:
+                reward -= 1
+
+            max_future_reward = np.max(Q[new_state])
+
+            # Update Q-learning table
+            Q[state][action] = Q[state][action] + ALPHA * (reward + GAMMA * max_future_reward - Q[state][action])
+
+            total_reward += reward
+            state = new_state
+
+            # Break at found solution
+            if state == (dropoff_x, dropoff_y) and has_passenger:
+                break
+    
+    action = np.argmax(Q[state])
+    # Taxi movement
+    if action == 0 and board[taxi_x - 1][taxi_y] not in OBSTACLES:
+        board[taxi_x][taxi_y] = EMPTY
+        taxi_x -= 1
+        direction = "up"
+    elif action == 1 and board[taxi_x + 1][taxi_y] not in OBSTACLES:
+        board[taxi_x][taxi_y] = EMPTY
+        taxi_x += 1
+        direction = "down"
+    elif action == 2 and board[taxi_x][taxi_y - 1] not in OBSTACLES:
+        board[taxi_x][taxi_y] = EMPTY
+        taxi_y -= 1
+        direction = "left"
+    elif action == 3 and board[taxi_x][taxi_y + 1] not in OBSTACLES:
+        board[taxi_x][taxi_y] = EMPTY
+        taxi_y += 1
+        direction = "right"
+
+    if new_state == (dropoff_x, dropoff_y) and has_passenger:
         reset = True
         score += 1
 
-    # Check if taxi picked up the passenger
-    if (taxi_x, taxi_y) == (passenger_x, passenger_y) and not has_passenger:
-        board[passenger_x][passenger_y] = EMPTY
-        has_passenger = True
-        print("Passenger picked up! Head to the drop-off location.")
-
-    # Update taxi location on the board
+    # Update taxi and dropoff location on the board
+    board[dropoff_x][dropoff_y] = DROPOFF
     board[taxi_x][taxi_y] = TAXI
+    print(str(taxi_x),str(taxi_y))
 
     # Clear the window
     window.fill(WHITE)
@@ -216,12 +273,12 @@ while running:
             cell_rect = pygame.Rect(
                 col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE
             )
+            if board[row][col] == DROPOFF:
+                window.blit(dropoff_image, cell_rect)
+            if board[row][col] == PASSENGER:
+                window.blit(passenger_image, cell_rect)
             if board[row][col] == TAXI:
                 window.blit(taxi_images[direction], cell_rect)
-            elif board[row][col] == PASSENGER:
-                window.blit(passenger_image, cell_rect)
-            elif board[row][col] == DROPOFF:
-                window.blit(dropoff_image, cell_rect)
 
     # Render the score text
     score_text = font.render("Score: " + str(score), True, WHITE, BLACK)
@@ -233,5 +290,7 @@ while running:
     pygame.display.flip()
     clock.tick(60)
 
-pygame.quit()
+    time.sleep(1)
+
+pygame.quit() 
 print("Game over!")
