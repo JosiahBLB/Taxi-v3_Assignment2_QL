@@ -189,13 +189,11 @@ while running:
             # Check if passenger has been dropped off
             if new_state == (dropoff_x, dropoff_y) and has_passenger_q:
                 reward += 100
-                print("Dropped off")
 
             # Check if taxi picked up the passenger
             elif new_state == (passenger_x, passenger_y) and (not has_passenger_q):
                 has_passenger_q = True
                 reward += 10
-                print("Picked up")
 
             # Minus one for playing a move
             else:
@@ -211,6 +209,7 @@ while running:
 
             # Break at found solution
             if state == (dropoff_x, dropoff_y) and has_passenger_q:
+                print("Winning policy found")
                 break
 
     # Pick the best action
