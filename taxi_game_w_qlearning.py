@@ -93,7 +93,6 @@ def new_game():
 
     has_passenger = False
 
-
 # Initialize Pygame
 pygame.init()
 window = pygame.display.set_mode(WINDOW_SIZE)
@@ -165,6 +164,10 @@ while running:
         state = (copy.copy(taxi_x), copy.copy(taxi_y))
         total_reward = 0
         for step in range(MAX_STEPS):
+            
+            # Updates current status of passenger
+            if(has_passenger):
+                has_passenger_q = True
 
             # Choose an optimised choice or random choice based on ϵ
             if random.uniform(0, 1) < EPSILON:
@@ -191,7 +194,7 @@ while running:
                 reward += 100
 
             # Check if taxi picked up the passenger
-            elif new_state == (passenger_x, passenger_y) and (not has_passenger_q):
+            elif new_state == (passenger_x, passenger_y) and not has_passenger_q:
                 has_passenger_q = True
                 reward += 10
 
@@ -199,7 +202,7 @@ while running:
             else:
                 reward -= 1
 
-            max_future_reward = np.max(Q[new_state])
+            max_future_reward = max(Q[new_state])
 
             # Update Q-learning table
             Q[state][action] = Q[state][action] + ALPHA * (reward + GAMMA * max_future_reward - Q[state][action])
@@ -212,10 +215,8 @@ while running:
                 print("Winning policy found")
                 break
 
-    # Pick the best action
-    action = np.argmax(Q[state])
-
-    print(action)
+    # Pick the best action from current state
+    action = np.argmax(Q[taxi_x][taxi_y])
 
     # Taxi movement
     if action == 0 and board[taxi_x - 1][taxi_y] not in OBSTACLES:
@@ -235,10 +236,10 @@ while running:
         taxi_y += 1
         direction = "right"
 
+    # Check Objectives
     if (taxi_x, taxi_y) == (dropoff_x, dropoff_y) and has_passenger:
         reset = True
         score += 1
-
     elif (taxi_x, taxi_y) == (passenger_x, passenger_y) and not has_passenger:
         board[passenger_x][passenger_y] = EMPTY
         has_passenger = True
