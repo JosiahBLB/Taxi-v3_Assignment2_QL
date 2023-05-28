@@ -1,5 +1,10 @@
+"""
+Taxi game solved with Q-Learning.
+
+Authors: Josiah, Luke and Kisoon
+"""
+
 import copy
-import time
 import pygame
 import random
 import numpy as np
@@ -93,6 +98,7 @@ def new_game():
 
     has_passenger = False
 
+
 # Initialize Pygame
 pygame.init()
 window = pygame.display.set_mode(WINDOW_SIZE)
@@ -148,12 +154,11 @@ running = True
 reset = True
 display_reward = 0
 while running:
-
     # Resets the board to a randomized layout
     if reset:
         new_game()
         reset = False
-    
+
     # A way for the user to exit
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -165,9 +170,8 @@ while running:
         state = (copy.copy(taxi_x), copy.copy(taxi_y))
         total_reward = 0
         for step in range(MAX_STEPS):
-            
             # Updates current status of passenger
-            if(has_passenger):
+            if has_passenger:
                 has_passenger_q = True
 
             # Choose an optimised choice or random choice based on ϵ
@@ -187,7 +191,7 @@ while running:
                 new_state = (state[0], state[1] + 1)
             else:
                 new_state = state
-            
+
             reward = 0
 
             # Check if passenger has been dropped off
@@ -206,14 +210,15 @@ while running:
             max_future_reward = max(Q[new_state])
 
             # Update Q-learning table
-            Q[state][action] = Q[state][action] + ALPHA * (reward + GAMMA * max_future_reward - Q[state][action])
+            Q[state][action] = Q[state][action] + ALPHA * (
+                reward + GAMMA * max_future_reward - Q[state][action]
+            )
 
             total_reward += reward
             state = new_state
 
             # Break at found solution
             if state == (dropoff_x, dropoff_y) and has_passenger_q:
-                print("Winning policy found")
                 break
 
     # Pick the best action from current state
@@ -248,7 +253,6 @@ while running:
         display_reward += 10
     else:
         display_reward -= 1
-
 
     # Update taxi and dropoff location on the board
     board[dropoff_x][dropoff_y] = DROPOFF
@@ -303,12 +307,12 @@ while running:
     reward_text = font.render("Reward: " + str(display_reward), True, RED, BLACK)
     window.blit(reward_text, (WIN_COLS * CELL_SIZE - 200, 10))
 
-    # Blit the score text onto the window surface
+    # Render the score text onto the window surface
     window.blit(score_text, (10, 10))
 
     # Update the display
     pygame.display.flip()
     clock.tick(60)
 
-pygame.quit() 
+pygame.quit()
 print("Game over!")
