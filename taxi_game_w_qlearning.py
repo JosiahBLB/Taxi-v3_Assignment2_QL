@@ -1,3 +1,4 @@
+import copy
 import time
 import pygame
 import random
@@ -16,7 +17,7 @@ DROPOFF = "D"
 
 # Q-learning constants
 NUM_ACTIONS = 6
-NUM_EPISODES = 10000
+NUM_EPISODES = 1000
 MAX_STEPS = 100
 ALPHA = 0.1
 GAMMA = 0.6
@@ -159,7 +160,8 @@ while running:
 
     # Updating the Q-table
     for episode in range(NUM_EPISODES):
-        state = (taxi_x, taxi_y)
+        has_passenger_q = False
+        state = (copy.copy(taxi_x), copy.copy(taxi_y))
         total_reward = 0
         for step in range(MAX_STEPS):
 
@@ -182,14 +184,14 @@ while running:
                 new_state = state
             
             reward = 0
+
             # Check if passenger has been dropped off
-            if new_state == (dropoff_x, dropoff_y) and has_passenger:
+            if new_state == (dropoff_x, dropoff_y) and has_passenger_q:
                 reward += 100
 
             # Check if taxi picked up the passenger
-            elif new_state == (passenger_x, passenger_y) and not has_passenger:
-                board[passenger_x][passenger_y] = EMPTY
-                has_passenger = True
+            elif new_state == (passenger_x, passenger_y) and not has_passenger_q:
+                has_passenger_q = True
                 reward += 10
 
             # Minus one for playing a move
@@ -205,10 +207,14 @@ while running:
             state = new_state
 
             # Break at found solution
-            if state == (dropoff_x, dropoff_y) and has_passenger:
+            if state == (dropoff_x, dropoff_y) and has_passenger_q:
                 break
-    
+
+    # Pick the best action
     action = np.argmax(Q[state])
+
+    print(action)
+
     # Taxi movement
     if action == 0 and board[taxi_x - 1][taxi_y] not in OBSTACLES:
         board[taxi_x][taxi_y] = EMPTY
@@ -288,8 +294,6 @@ while running:
     # Update the display
     pygame.display.flip()
     clock.tick(60)
-
-    time.sleep(1)
 
 pygame.quit() 
 print("Game over!")
