@@ -19,9 +19,9 @@ DROPOFF = "D"
 NUM_ACTIONS = 6
 NUM_EPISODES = 1000
 MAX_STEPS = 100
-ALPHA = 0.1
-GAMMA = 0.6
-EPSILON = 0.1
+ALPHA = 0.5
+GAMMA = 0.99
+EPSILON = 0.01
 
 Q = np.zeros((WIN_ROWS, WIN_COLS, NUM_ACTIONS))
 
@@ -43,6 +43,7 @@ LOC_D = (5, 8)
 # Colors
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
+RED = (255, 0, 0)
 
 # Game variables
 board: list[list]
@@ -188,11 +189,13 @@ while running:
             # Check if passenger has been dropped off
             if new_state == (dropoff_x, dropoff_y) and has_passenger_q:
                 reward += 100
+                print("Dropped off")
 
             # Check if taxi picked up the passenger
-            elif new_state == (passenger_x, passenger_y) and not has_passenger_q:
+            elif new_state == (passenger_x, passenger_y) and (not has_passenger_q):
                 has_passenger_q = True
                 reward += 10
+                print("Picked up")
 
             # Minus one for playing a move
             else:
@@ -233,9 +236,14 @@ while running:
         taxi_y += 1
         direction = "right"
 
-    if new_state == (dropoff_x, dropoff_y) and has_passenger:
+    if (taxi_x, taxi_y) == (dropoff_x, dropoff_y) and has_passenger:
         reset = True
         score += 1
+
+    elif (taxi_x, taxi_y) == (passenger_x, passenger_y) and not has_passenger_q:
+        board[passenger_x][passenger_y] = EMPTY
+        has_passenger_q = True
+
 
     # Update taxi and dropoff location on the board
     board[dropoff_x][dropoff_y] = DROPOFF
@@ -287,6 +295,8 @@ while running:
 
     # Render the score text
     score_text = font.render("Score: " + str(score), True, WHITE, BLACK)
+    reward_text = font.render("Reward: " + str(total_reward), True, RED, BLACK)
+    window.blit(reward_text, (WIN_COLS * CELL_SIZE - 200, 10))
 
     # Blit the score text onto the window surface
     window.blit(score_text, (10, 10))
