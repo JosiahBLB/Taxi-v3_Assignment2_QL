@@ -1,3 +1,4 @@
+import copy
 import time
 import pygame
 import random
@@ -16,11 +17,11 @@ DROPOFF = "D"
 
 # Q-learning constants
 NUM_ACTIONS = 6
-NUM_EPISODES = 10000
+NUM_EPISODES = 1000
 MAX_STEPS = 100
-ALPHA = 0.1
-GAMMA = 0.6
-EPSILON = 0.1
+ALPHA = 0.5
+GAMMA = 0.99
+EPSILON = 0.01
 
 Q = np.zeros((WIN_ROWS, WIN_COLS, NUM_ACTIONS))
 
@@ -42,6 +43,7 @@ LOC_D = (5, 8)
 # Colors
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
+RED = (255, 0, 0)
 
 # Game variables
 board: list[list]
@@ -91,7 +93,6 @@ def new_game():
 
     has_passenger = False
 
-
 # Initialize Pygame
 pygame.init()
 window = pygame.display.set_mode(WINDOW_SIZE)
@@ -102,6 +103,7 @@ font_size = 40
 font = pygame.font.Font(None, font_size)
 
 # Load custom sprites
+
 taxi_images = {
     "up": pygame.image.load("img/cab_rear.png"),
     "down": pygame.image.load("img/cab_front.png"),
@@ -159,9 +161,14 @@ while running:
 
     # Updating the Q-table
     for episode in range(NUM_EPISODES):
-        state = (taxi_x, taxi_y)
+        has_passenger_q = False
+        state = (copy.copy(taxi_x), copy.copy(taxi_y))
         total_reward = 0
         for step in range(MAX_STEPS):
+            
+            # Updates current status of passenger
+            if(has_passenger):
+                has_passenger_q = True
 
             # Choose an optimised choice or random choice based on ϵ
             if random.uniform(0, 1) < EPSILON:
@@ -180,23 +187,23 @@ while running:
                 new_state = (state[0], state[1] + 1)
             else:
                 new_state = state
-                print(new_state)
+            
             reward = 0
+
             # Check if passenger has been dropped off
-            if new_state == (dropoff_x, dropoff_y) and has_passenger:
+            if new_state == (dropoff_x, dropoff_y) and has_passenger_q:
                 reward += 100
 
             # Check if taxi picked up the passenger
-            elif new_state == (passenger_x, passenger_y) and not has_passenger:
-                board[passenger_x][passenger_y] = EMPTY
-                has_passenger = True
+            elif new_state == (passenger_x, passenger_y) and not has_passenger_q:
+                has_passenger_q = True
                 reward += 10
 
             # Minus one for playing a move
             else:
                 reward -= 1
 
-            max_future_reward = np.max(Q[new_state])
+            max_future_reward = max(Q[new_state])
 
             # Update Q-learning table
             Q[state][action] = Q[state][action] + ALPHA * (reward + GAMMA * max_future_reward - Q[state][action])
@@ -205,10 +212,13 @@ while running:
             state = new_state
 
             # Break at found solution
-            if state == (dropoff_x, dropoff_y) and has_passenger:
+            if state == (dropoff_x, dropoff_y) and has_passenger_q:
+                print("Winning policy found")
                 break
-    
-    action = np.argmax(Q[state])
+
+    # Pick the best action from current state
+    action = np.argmax(Q[taxi_x][taxi_y])
+
     # Taxi movement
     if action == 0 and board[taxi_x - 1][taxi_y] not in OBSTACLES:
         board[taxi_x][taxi_y] = EMPTY
@@ -227,14 +237,18 @@ while running:
         taxi_y += 1
         direction = "right"
 
-    if new_state == (dropoff_x, dropoff_y) and has_passenger:
+    # Check Objectives
+    if (taxi_x, taxi_y) == (dropoff_x, dropoff_y) and has_passenger:
         reset = True
         score += 1
+    elif (taxi_x, taxi_y) == (passenger_x, passenger_y) and not has_passenger:
+        board[passenger_x][passenger_y] = EMPTY
+        has_passenger = True
+
 
     # Update taxi and dropoff location on the board
     board[dropoff_x][dropoff_y] = DROPOFF
     board[taxi_x][taxi_y] = TAXI
-    print(str(taxi_x),str(taxi_y))
 
     # Clear the window
     window.fill(WHITE)
@@ -282,6 +296,8 @@ while running:
 
     # Render the score text
     score_text = font.render("Score: " + str(score), True, WHITE, BLACK)
+    reward_text = font.render("Reward: " + str(total_reward), True, RED, BLACK)
+    window.blit(reward_text, (WIN_COLS * CELL_SIZE - 200, 10))
 
     # Blit the score text onto the window surface
     window.blit(score_text, (10, 10))
@@ -289,8 +305,6 @@ while running:
     # Update the display
     pygame.display.flip()
     clock.tick(60)
-
-    time.sleep(1)
 
 pygame.quit() 
 print("Game over!")
