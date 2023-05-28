@@ -239,9 +239,9 @@ while running:
         reset = True
         score += 1
 
-    elif (taxi_x, taxi_y) == (passenger_x, passenger_y) and not has_passenger_q:
+    elif (taxi_x, taxi_y) == (passenger_x, passenger_y) and not has_passenger:
         board[passenger_x][passenger_y] = EMPTY
-        has_passenger_q = True
+        has_passenger = True
 
 
     # Update taxi and dropoff location on the board
