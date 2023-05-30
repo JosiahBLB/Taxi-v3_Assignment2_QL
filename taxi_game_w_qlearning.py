@@ -23,11 +23,12 @@ DROPOFF = "D"
 
 # Q-learning constants
 NUM_ACTIONS = 6
-NUM_EPISODES = 1000
-MAX_STEPS = 100
-ALPHA = 0.2
-GAMMA = 0.99
-EPSILON = 0.01
+NUM_EPISODES = 300
+MAX_STEPS = 140
+ALPHA = 0.3  # Learning rate
+GAMMA = 0.99  # Discount factor
+EPSILON_INITIAL = 0.05  # Exploration rate
+EPSILON_FINAL = 0.01
 
 # Initialze Q-table
 Q = np.zeros((WIN_ROWS, WIN_COLS, NUM_ACTIONS))
@@ -61,10 +62,14 @@ passenger_y: int
 dropoff_x: int
 dropoff_y: int
 has_passenger: bool
+pickup: bool
+dropoff: bool
+taxi_x, taxi_y = (3, 4)
+
 
 # A function that re-initializes the game into a random starting state
 def new_game():
-    global board, taxi_x, taxi_y, passenger_x, passenger_y, dropoff_x, dropoff_y, has_passenger
+    global board, passenger_x, passenger_y, dropoff_x, dropoff_y, has_passenger, pickup, dropoff
 
     # Initialize game board
     board = [
@@ -76,14 +81,6 @@ def new_game():
         [OB__B, EMPTY, OB__B, EMPTY, EMPTY, EMPTY, EMPTY, OB__B, EMPTY, OB__B],
         [EMPTY, OB__L, OB__H, OB__H, OB__H, OB__H, OB__H, OB__H, OB__R, EMPTY],
     ]
-
-    # Set taxi to random position
-    taxi_x, taxi_y = random.randint(1, WIN_ROWS - 2), random.randint(1, WIN_COLS - 2)
-    while board[taxi_x][taxi_y] in OBSTACLES:
-        taxi_x, taxi_y = random.randint(1, WIN_ROWS - 2), random.randint(
-            1, WIN_COLS - 2
-        )
-    board[taxi_x][taxi_y] = TAXI
 
     # Generate random passenger locations
     locations = [LOC_A, LOC_B, LOC_C, LOC_D]
@@ -100,6 +97,8 @@ def new_game():
 
     # initalize without passenger
     has_passenger = False
+    pickup = False
+    dropoff = False
 
 
 # Initialize Pygame
@@ -156,8 +155,8 @@ score = 0
 running = True
 reset = True
 display_reward = 0
-while running:
 
+while running:
     # Resets the board to a randomized layout
     if reset:
         new_game()
@@ -170,16 +169,28 @@ while running:
 
     # Updating the Q-table
     for episode in range(NUM_EPISODES):
-        has_passenger_q = False
+        q_has_passenger = False
+        q_pickup = False
+        q_dropoff = False
+        q_passenger_pos = (copy.copy(passenger_x), copy.copy(passenger_y))
         state = (copy.copy(taxi_x), copy.copy(taxi_y))
+        new_state = state
+
+        # Calculate epsilon for the current episode
+        epsilon = max(
+            EPSILON_FINAL,
+            EPSILON_INITIAL
+            - (episode / NUM_EPISODES) * (EPSILON_INITIAL - EPSILON_FINAL),
+        )
+
         for step in range(MAX_STEPS):
             # Updates current status of passenger
             if has_passenger:
-                has_passenger_q = True
+                q_has_passenger = True
 
             # Choose an optimised choice or random choice based on ϵ
-            if random.uniform(0, 1) < EPSILON:
-                action = random.choice(range(4))
+            if random.uniform(0, 1) < epsilon:
+                action = random.choice(range(NUM_ACTIONS))
             else:
                 action = np.argmax(Q[state])
 
@@ -192,19 +203,41 @@ while running:
                 new_state = (state[0], state[1] - 1)
             elif action == 3 and board[state[0]][state[1] + 1] not in OBSTACLES:
                 new_state = (state[0], state[1] + 1)
-            else:
-                new_state = state
+            elif action == 4:
+                q_pickup = True
+            elif action == 5:
+                q_dropoff = True
 
             reward = 0
 
-            # Check if passenger has been dropped off
-            if new_state == (dropoff_x, dropoff_y) and has_passenger_q:
-                reward += 100
+            # Check if passenger has been dropped off at the correct location
+            if new_state == (dropoff_x, dropoff_y) and q_has_passenger and q_dropoff:
+                q_dropoff = False
+                reward += 20
 
-            # Check if taxi picked up the passenger
-            elif new_state == (passenger_x, passenger_y) and not has_passenger_q:
-                has_passenger_q = True
-                reward += 10
+            # Check if the taxi has picked up the passenger
+            elif q_pickup and not q_has_passenger and new_state == q_passenger_pos:
+                q_pickup = False
+                q_has_passenger = True
+                reward += 2
+
+            # Check if passenger has been dropped off at the wrong location
+            elif q_dropoff and q_has_passenger and new_state != (dropoff_x, dropoff_y):
+                q_passenger_pos = new_state
+                q_has_passenger = False
+                q_dropoff = False
+                reward -= 10
+
+            # Check if the pickup or dropoff chosen with no passenger
+            elif (
+                q_dropoff
+                and not q_has_passenger
+                or q_pickup
+                and new_state != q_passenger_pos
+            ):
+                q_pickup = False
+                q_dropoff = False
+                reward -= 10
 
             # Minus one for playing a move
             else:
@@ -219,11 +252,13 @@ while running:
             state = new_state
 
             # Break at found solution
-            if state == (dropoff_x, dropoff_y) and has_passenger_q:
+            if state == (dropoff_x, dropoff_y) and q_has_passenger:
                 break
 
     # Pick the best action from current state
     action = np.argmax(Q[taxi_x][taxi_y])
+
+    print(action)
 
     # Taxi movement
     if action == 0 and board[taxi_x - 1][taxi_y] not in OBSTACLES:
@@ -242,22 +277,53 @@ while running:
         board[taxi_x][taxi_y] = EMPTY
         taxi_y += 1
         direction = "right"
+    elif action == 4:
+        pickup = True
+    elif action == 5:
+        dropoff = True
 
-    # Check Objectives
-    if (taxi_x, taxi_y) == (dropoff_x, dropoff_y) and has_passenger:
+    # Check if passenger has been dropped off at the correct location
+    if (taxi_x, taxi_y) == (dropoff_x, dropoff_y) and has_passenger and dropoff:
+        dropoff = False
         reset = True
         score += 1
-        display_reward += 100
-    elif (taxi_x, taxi_y) == (passenger_x, passenger_y) and not has_passenger:
+        display_reward += 20
+
+    # Check if the taxi has picked up the passenger
+    elif (
+        pickup and not has_passenger and (taxi_x, taxi_y) == (passenger_x, passenger_y)
+    ):
         board[passenger_x][passenger_y] = EMPTY
+        pickup = False
         has_passenger = True
-        display_reward += 10
+        display_reward += 5
+
+    # Check if passenger has been dropped off at the wrong location
+    elif dropoff and has_passenger and (taxi_x, taxi_y) != (dropoff_x, dropoff_y):
+        (passenger_x, passenger_y) = (taxi_x, taxi_y)
+        has_passenger = False
+        dropoff = False
+        display_reward -= 10
+
+    # Check if the pickup or dropoff chosen with no passenger
+    elif (
+        dropoff
+        and not has_passenger
+        or pickup
+        and (taxi_x, taxi_y) != (passenger_x, passenger_y)
+    ):
+        pickup = False
+        dropoff = False
+        display_reward -= 10
+
     else:
         display_reward -= 1
 
-    # Update taxi and dropoff location on the board
+    # Update sprites on the board
     board[dropoff_x][dropoff_y] = DROPOFF
     board[taxi_x][taxi_y] = TAXI
+    if not has_passenger and (passenger_x, passenger_y) != (taxi_x, taxi_y):
+        board[passenger_x][passenger_y] = PASSENGER
 
     # Clear the window
     window.fill(WHITE)
@@ -319,4 +385,3 @@ while running:
     time.sleep(0.01)
 
 pygame.quit()
-print("Game over!")
