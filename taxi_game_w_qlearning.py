@@ -5,6 +5,7 @@ Authors: Josiah, Luke and Kisoon
 """
 
 import copy
+import time
 import pygame
 import random
 import numpy as np
@@ -24,10 +25,11 @@ DROPOFF = "D"
 NUM_ACTIONS = 6
 NUM_EPISODES = 1000
 MAX_STEPS = 100
-ALPHA = 0.5
+ALPHA = 0.2
 GAMMA = 0.99
 EPSILON = 0.01
 
+# Initialze Q-table
 Q = np.zeros((WIN_ROWS, WIN_COLS, NUM_ACTIONS))
 
 # Obstacles
@@ -60,7 +62,7 @@ dropoff_x: int
 dropoff_y: int
 has_passenger: bool
 
-
+# A function that re-initializes the game into a random starting state
 def new_game():
     global board, taxi_x, taxi_y, passenger_x, passenger_y, dropoff_x, dropoff_y, has_passenger
 
@@ -96,6 +98,7 @@ def new_game():
     board[passenger_x][passenger_y] = PASSENGER
     board[dropoff_x][dropoff_y] = DROPOFF
 
+    # initalize without passenger
     has_passenger = False
 
 
@@ -154,6 +157,7 @@ running = True
 reset = True
 display_reward = 0
 while running:
+
     # Resets the board to a randomized layout
     if reset:
         new_game()
@@ -168,7 +172,6 @@ while running:
     for episode in range(NUM_EPISODES):
         has_passenger_q = False
         state = (copy.copy(taxi_x), copy.copy(taxi_y))
-        total_reward = 0
         for step in range(MAX_STEPS):
             # Updates current status of passenger
             if has_passenger:
@@ -207,14 +210,12 @@ while running:
             else:
                 reward -= 1
 
-            max_future_reward = max(Q[new_state])
-
             # Update Q-learning table
+            max_future_reward = max(Q[new_state])
             Q[state][action] = Q[state][action] + ALPHA * (
                 reward + GAMMA * max_future_reward - Q[state][action]
             )
 
-            total_reward += reward
             state = new_state
 
             # Break at found solution
@@ -313,6 +314,9 @@ while running:
     # Update the display
     pygame.display.flip()
     clock.tick(60)
+
+    # Allows user to see each taxi movement
+    time.sleep(0.01)
 
 pygame.quit()
 print("Game over!")
