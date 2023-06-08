@@ -213,7 +213,6 @@ while running:
 
             # Break at found solution
             if state == (dropoff_x, dropoff_y) and has_passenger_q:
-                print("Winning policy found")
                 break
 
     # Pick the best action from current state
