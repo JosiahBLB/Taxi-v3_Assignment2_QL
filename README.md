@@ -1,3 +1,3 @@
 # Q-Learning Taxi Game
-Trying to build the Q-Learning Taxi Environment
+Taxi game solved with Q-learning
 The Taxi-V3 is the original OpenGym taxi environment.
