@@ -93,6 +93,7 @@ def new_game():
 
     has_passenger = False
 
+
 # Initialize Pygame
 pygame.init()
 window = pygame.display.set_mode(WINDOW_SIZE)
@@ -148,12 +149,11 @@ score = 0
 running = True
 reset = True
 while running:
-
     # Resets the board to a randomized layout
     if reset:
         new_game()
         reset = False
-    
+
     # A way for the user to exit
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -165,9 +165,8 @@ while running:
         state = (copy.copy(taxi_x), copy.copy(taxi_y))
         total_reward = 0
         for step in range(MAX_STEPS):
-            
             # Updates current status of passenger
-            if(has_passenger):
+            if has_passenger:
                 has_passenger_q = True
 
             # Choose an optimised choice or random choice based on ϵ
@@ -187,7 +186,7 @@ while running:
                 new_state = (state[0], state[1] + 1)
             else:
                 new_state = state
-            
+
             reward = 0
 
             # Check if passenger has been dropped off
@@ -206,7 +205,9 @@ while running:
             max_future_reward = max(Q[new_state])
 
             # Update Q-learning table
-            Q[state][action] = Q[state][action] + ALPHA * (reward + GAMMA * max_future_reward - Q[state][action])
+            Q[state][action] = Q[state][action] + ALPHA * (
+                reward + GAMMA * max_future_reward - Q[state][action]
+            )
 
             total_reward += reward
             state = new_state
@@ -244,7 +245,6 @@ while running:
     elif (taxi_x, taxi_y) == (passenger_x, passenger_y) and not has_passenger:
         board[passenger_x][passenger_y] = EMPTY
         has_passenger = True
-
 
     # Update taxi and dropoff location on the board
     board[dropoff_x][dropoff_y] = DROPOFF
@@ -306,5 +306,5 @@ while running:
     pygame.display.flip()
     clock.tick(60)
 
-pygame.quit() 
+pygame.quit()
 print("Game over!")
